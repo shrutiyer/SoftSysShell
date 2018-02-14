@@ -1,0 +1,4 @@
+There is an excellent book "The UNIX programming Environment" by Kernighan and Pike that can be a very useful book for understanding pipes (redirection of stdin and stdout). It will be very important to understand how 
+processes are created (fork, exec and wait) and processes communicate through pipes (stdin and stdout redirection) and also some system calls like dup would be enormously helpful. I can also help in pointing to resources 
+as well help in understanding both the file system as well process management system calls. 
+sri
