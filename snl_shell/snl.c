@@ -31,9 +31,6 @@ void snl_split_line(char* line, char** args){
 	}
 }
 
-// Using Brennan's implementation of the main loop
-// https://brennan.io/2015/01/16/write-a-shell-in-c/
-
 /*
 	Using Brennan's implementation and https://github.com/jmreyes/simple-c-shell
 	Launches a child process
