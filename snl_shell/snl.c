@@ -8,6 +8,27 @@ Created for Software Systems project 1
 
 // Using Brennan's implementation of the main loop
 // https://brennan.io/2015/01/16/write-a-shell-in-c/
+int snl_fork(char **args){
+  pid_t pid = fork();
+
+  if(pid == 0){ // CHILD PROCESS
+    // If non-exisiting commands are launched, end process
+    if(execvp(args[0], args) == -1){
+      perror("snl command not found");
+      kill(getpid(), SIGTERM);
+    }
+    //
+    exit(EXIT_FAILURE);
+  } else if(pid < 0){
+    perror("snl forking error");
+  } else{ // PARENT PROCESS
+    do{
+      waitpid(pid, &status, WUNTRACED); // TODO: may need to be wpid = waitpid
+    } while(!WIFEXITED(status) && !WIFSIGNALED(status));
+  }
+  return 1;
+}
+
 void snl_loop(void)
 {
   char *line;
