@@ -1,4 +1,13 @@
 
+/*
+SNL (Shruti, Nora, Lucy) Shell
+Created for Software Systems project 1
+
+*/
+
+
+// Using Brennan's implementation of the main loop
+// https://brennan.io/2015/01/16/write-a-shell-in-c/
 void snl_loop(void)
 {
   char *line;
@@ -16,7 +25,8 @@ void snl_loop(void)
   } while (status);
 }
 
-
+// Using Brennan's implementation of main
+// https://brennan.io/2015/01/16/write-a-shell-in-c/
 int main(int argc, char **argv)
 {
   // Load config files, if any.
