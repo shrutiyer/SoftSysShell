@@ -26,9 +26,33 @@ void snl_split_line(char* line, char** args){
 		if (parsed[i] == NULL){
 			break; // end of line
 		} else if (strlen(parsed[i]) == 0){
-			i--; // to re-write over empty arg
+			i--; // re-write over empty entry
 		}
 	}
+}
+
+// Using Brennan's implementation of the main loop
+// https://brennan.io/2015/01/16/write-a-shell-in-c/
+int snl_fork(char **args){
+  pid_t pid = fork();
+  int status;
+
+  if(pid == 0){ // CHILD PROCESS
+    // If non-exisiting commands are launched, end process
+    if(execvp(args[0], args) == -1){
+      perror("snl command not found");
+      kill(getpid(), SIGTERM);
+    }
+    //
+    exit(EXIT_FAILURE);
+  } else if(pid < 0){
+    perror("snl forking error");
+  } else{ // PARENT PROCESS
+    do{
+      waitpid(pid, &status, WUNTRACED); // TODO: may need to be wpid = waitpid
+    } while(!WIFEXITED(status) && !WIFSIGNALED(status));
+  }
+  return 1;
 }
 
 /* based off of Brennan
