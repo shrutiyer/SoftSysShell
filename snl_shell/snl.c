@@ -10,6 +10,7 @@ Created for Software Systems project 1
 // https://brennan.io/2015/01/16/write-a-shell-in-c/
 int snl_fork(char **args){
   pid_t pid = fork();
+  int status;
 
   if(pid == 0){ // CHILD PROCESS
     // If non-exisiting commands are launched, end process
