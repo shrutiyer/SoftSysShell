@@ -19,13 +19,13 @@ Created for Software Systems project 1
 /* splits line into set of args
 */
 void snl_split_line(char* line, char** args){
-	for (int i = 0; i < MAXARGS) {
+	for (int i = 0; i < MAXARGS; i++) {
 		// get each arg seperated by space
 		args[i] = strsep(&line, " "); 
 
-		if (parsed[i] == NULL){
+		if (args[i] == NULL){
 			break; // end of line
-		} else if (strlen(parsed[i]) == 0){
+		} else if (strlen(args[i]) == 0){
 			i--; // re-write over empty entry
 		}
 	}
@@ -59,7 +59,7 @@ int snl_fork(char **args){
 returns char* because allocation is done by getline
 */
 char* snl_read_line(void){
-	char* line; // todo: maybe needs to equal null??
+	char* line; 
 	ssize_t buffersize = 0;
 	getline(&line, &buffersize, stdin);
 	return line;
@@ -71,17 +71,17 @@ char* snl_read_line(void){
 */
 void snl_loop(void){
   char *line;
-  char **args[MAXARGS];
+  char *args[MAXARGS];
   int status;
 
   do {
     printf("> ");
     line = snl_read_line();
     snl_split_line(line, args);
-    status = snl_execute(args);
+    status = snl_fork(args);
 
     free(line);
-    free(args);
+    // free(args);
   } while (status);
 }
 
