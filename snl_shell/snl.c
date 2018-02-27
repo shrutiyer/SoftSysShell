@@ -22,7 +22,7 @@ void snl_split_line(char* line, char** args);
 int snl_execute(char** args, char** args2, int piped);
 int snl_fork(char **args);
 int main(int argc, char **argv);
-int snl_detect_pipe(char* line, char** linepiped, char** args, char** args2);
+int snl_detect_pipe(char* line, char** args, char** args2);
 int snl_forkpipe(char** args, char** args2);
 
 // An array of strings with built-in command names
@@ -49,14 +49,14 @@ void snl_loop(void){
   char *line;
   char *args[MAXARGS];
   char *args2[MAXARGS];
-  char *argspiped[MAXARGS];
+  // char *argspiped[2]; //move this
   int status;
   int piped;
 
   do {
     printf("> ");
     line = snl_read_line();
-    piped = snl_detect_pipe(line, argspiped, args, args2);
+    piped = snl_detect_pipe(line, args, args2);
     status = snl_execute(args, args2, piped);
 
     free(line);
@@ -109,25 +109,22 @@ void snl_split_line(char* line, char** args){
 
   adapted from: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
-int snl_detect_pipe(char* line, char** linepiped, char** args, char** args2){
+int snl_detect_pipe(char* line, char** args, char** args2){
+  char *linepiped[2]; 
   for (int i = 0; i < 2; i++) {
-    char* c = strsep(&line, "|");
-    printf("c %s\n", c);
-    // linepiped[i] = strsep(&line, "|");
-    linepiped[i] = c;
+    linepiped[i] = strsep(&line, "|");
     if (linepiped[i] == NULL){
-      break; // no input
+      break; 
     }
-    printf("%s\n", linepiped[1]);
-    // if there is a second arg here there is a pipe
-    if (linepiped[0] == NULL) {
-      snl_split_line(line, args);
-      return 0; // no pipe
-    } else {
-      snl_split_line(linepiped[0], args);
-      snl_split_line(linepiped[1], args2);
-      return 1; // pipe
-    }
+  }
+  // if there is a second arg here there is a pipe
+  if (linepiped[1] == NULL) {
+    snl_split_line(linepiped[0], args);
+    return 0; // no pipe
+  } else {
+    snl_split_line(linepiped[0], args);
+    snl_split_line(linepiped[1], args2);
+    return 1; // pipe
   }
 
 }
@@ -151,7 +148,6 @@ int snl_execute(char** args, char** args2, int piped) {
 			printf("BUILTINS\n");
 		}
 	}
-  printf("%d\n", piped);
   if (!piped){
 	  return snl_fork(args);
   }
@@ -190,7 +186,6 @@ int snl_fork(char **args){
 }
 
 int snl_forkpipe(char** args, char** args2){
-  printf("%s\n", "jesus christ...");
   pid_t pid1, pid2;
   int piping[2];
 
