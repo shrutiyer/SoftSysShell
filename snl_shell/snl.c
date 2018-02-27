@@ -57,9 +57,11 @@ void snl_loop(void){
 char* get_cwd(){
 	long size = pathconf(".", _PC_PATH_MAX);
 	char *buf, *ptr;
+	buf = (char *)malloc((size_t)size);
 
-	if ((buf = (char *)malloc((size_t)size)) != NULL)
+	if (buf != NULL){
     ptr = getcwd(buf, (size_t)size);
+	}
 
 	return ptr;
 }
