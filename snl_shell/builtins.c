@@ -1,9 +1,9 @@
 #include "exit.c"
 
 // An array of strings with built-in command names
-char* snl_builtins_names[] = {"cd", "exit"};
+char* snl_builtins_names[] = {"exit"};
 
-int (*builtin_func[]) (char **) = {
+int (*snl_builtin_func[]) (char **) = {
   &snl_exit
 };
 

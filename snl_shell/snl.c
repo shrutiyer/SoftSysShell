@@ -100,8 +100,7 @@ int snl_execute(char** args) {
 
 	for (int i=0; i<snl_builtins_number(); i++) {
 		if (!strcmp(args[0], snl_builtins_names[i])) {
-			// TODO: call the built-in function
-			printf("BUILTINS\n");
+			return (*snl_builtin_func[i])(args);
 		}
 	}
 	return snl_fork(args);
