@@ -74,10 +74,14 @@ char* get_cwd() {
   Based off of Brennan's implementation
 */
 char* snl_read_line(void){
-  char* line;
-  ssize_t buffersize = 0;
-  getline(&line, &buffersize, stdin);
-  return line;
+	char* line;
+	ssize_t buffersize = 0;
+	getline(&line, &buffersize, stdin);
+	// Remove trailing \n character with end of line
+	if (line[strlen(line)-1]=='\n') {
+		line[strlen(line)-1]='\0';
+	}
+	return line;
 }
 
 /*
@@ -107,18 +111,17 @@ void snl_split_line(char* line, char** args){
   Adapted from https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
 int snl_execute(char** args) {
-  // If the command was null
-  if (args[0] == NULL) {
-    return 1;
-  }
+	// If the command was null
+	if (args[0] == NULL) {
+		return 1;
+	}
 
-  for (int i=0; i<snl_builtins_number(); i++) {
-    if (!strcmp(args[0], snl_builtins_names[i])) {
-      // TODO: call the built-in function
-      printf("BUILTINS\n");
-    }
-  }
-  return snl_fork(args);
+	for (int i=0; i<snl_builtins_number(); i++) {
+		if (!strcmp(args[0], snl_builtins_names[i])) {
+			return (*snl_builtin_func[i])(args);
+		}
+	}
+	return snl_fork(args);
 }
 
 /*
