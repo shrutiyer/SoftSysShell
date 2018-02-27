@@ -22,6 +22,7 @@ char* snl_read_line(void);
 void snl_split_line(char* line, char** args);
 int snl_execute(char** args);
 int snl_fork(char **args);
+char* get_cwd();
 int main(int argc, char **argv);
 
 /*
@@ -38,7 +39,7 @@ void snl_loop(void){
   int status;
 
   do {
-    printf("> ");
+    printf("%s> ", get_cwd());
     line = snl_read_line();
     snl_split_line(line, args);
     status = snl_execute(args);
@@ -46,6 +47,21 @@ void snl_loop(void){
     free(line);
     // free(args);
   } while (status);
+}
+
+/*
+	Returns your current working directory.
+	Inputs: Nothing
+	Returns: char* of path to your current working directory
+*/
+char* get_cwd(){
+	long size = pathconf(".", _PC_PATH_MAX);
+	char *buf, *ptr;
+
+	if ((buf = (char *)malloc((size_t)size)) != NULL)
+    ptr = getcwd(buf, (size_t)size);
+
+	return ptr;
 }
 
 /*
