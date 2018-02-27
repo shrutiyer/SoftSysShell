@@ -59,6 +59,10 @@ char* snl_read_line(void){
 	char* line;
 	ssize_t buffersize = 0;
 	getline(&line, &buffersize, stdin);
+	// Remove trailing \n character with end of line
+	if (line[strlen(line)-1]=='\n') {
+		line[strlen(line)-1]='\0';
+	}
 	return line;
 }
 
