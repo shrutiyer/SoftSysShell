@@ -38,7 +38,6 @@ void snl_loop(void){
   char *line;
   char *args[MAXARGS];
   char *args2[MAXARGS];
-  // char *argspiped[2]; //move this
   int status;
   int piped;
 
@@ -178,6 +177,13 @@ int snl_fork(char **args){
   return 1;
 }
 
+/*
+  Launches two child processes piping the first to the second
+  Inputs: Two (before and after pipe) user-inputted line of command stored in an array of arrays
+  Returns: 1
+
+  Mix of Brennan's implementation and https://www.geeksforgeeks.org/making-linux-shell-c/
+*/
 int snl_forkpipe(char** args, char** args2){
   pid_t pid1, pid2;
   int piping[2];
@@ -211,7 +217,7 @@ int snl_forkpipe(char** args, char** args2){
 
     if (pid2 == 0) {
       close(piping[1]);
-      dup2(piping[0], STDIN_FILENO); //http://codewiki.wikidot.com/c:system-calls:dup2
+      dup2(piping[0], STDIN_FILENO);
       close(piping[0]);
 
       if(execvp(args2[0], args2) == -1){
