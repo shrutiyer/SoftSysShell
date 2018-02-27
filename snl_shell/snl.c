@@ -26,14 +26,14 @@ char* get_cwd();
 int main(int argc, char **argv);
 
 /*
-	Main loop of the shell program
-	Inputs: Nothing
-	Returns: Nothing
+  Main loop of the shell program
+  Inputs: Nothing
+  Returns: Nothing
 
-	Using slight adaption of Brennan's implementation of the
+  Using slight adaption of Brennan's implementation of the
   main loop https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-void snl_loop(void){
+void snl_loop(void) {
   char *line;
   char *args[MAXARGS];
   int status;
@@ -50,90 +50,90 @@ void snl_loop(void){
 }
 
 /*
-	Returns your current working directory.
-	Inputs: Nothing
-	Returns: char* of path to your current working directory
+  Returns your current working directory.
+  Inputs: Nothing
+  Returns: char* of path to your current working directory
 */
-char* get_cwd(){
-	long size = pathconf(".", _PC_PATH_MAX);
-	char *buf, *ptr;
-	buf = (char *)malloc((size_t)size);
+char* get_cwd() {
+  long size = pathconf(".", _PC_PATH_MAX);
+  char *buf, *ptr;
+  buf = (char *)malloc((size_t)size);
 
-	if (buf != NULL){
+  if (buf != NULL){
     ptr = getcwd(buf, (size_t)size);
-	}
+  }
 
-	return ptr;
+  return ptr;
 }
 
 /*
-	Reads the line from standard input
-	Inputs: Nothing
-	Returns: char* of the user-inputted line by getline
+  Reads the line from standard input
+  Inputs: Nothing
+  Returns: char* of the user-inputted line by getline
 
-	Based off of Brennan's implementation
+  Based off of Brennan's implementation
 */
 char* snl_read_line(void){
-	char* line;
-	ssize_t buffersize = 0;
-	getline(&line, &buffersize, stdin);
-	return line;
+  char* line;
+  ssize_t buffersize = 0;
+  getline(&line, &buffersize, stdin);
+  return line;
 }
 
 /*
-	Splits line into set of args
-	Inputs: The user-inputted line of command,
-					an array of arrays to store the splitted line
-	Returns: Nothing
+  Splits line into set of args
+  Inputs: The user-inputted line of command,
+  an array of arrays to store the splitted line
+  Returns: Nothing
 */
 void snl_split_line(char* line, char** args){
-	for (int i = 0; i < MAXARGS; i++) {
-		// Get each arg seperated by space
-		args[i] = strsep(&line, " ");
+  for (int i = 0; i < MAXARGS; i++) {
+    // Get each arg seperated by space
+    args[i] = strsep(&line, " ");
 
-		if (args[i] == NULL){
-			break; // end of line
-		} else if (strlen(args[i]) == 0){
-			i--; // re-write over empty entry
-		}
-	}
+    if (args[i] == NULL) {
+      break; // end of line
+    } else if (strlen(args[i]) == 0) {
+      i--; // re-write over empty entry
+    }
+  }
 }
 
 /*
-	Analyzes either to launch a child process or run a built-in command
-	Inputs: char** of the user-inputted line split with spaces
-	Returns: TODO
+  Analyzes either to launch a child process or run a built-in command
+  Inputs: char** of the user-inputted line split with spaces
+  Returns: TODO
 
-	Adapted from https://brennan.io/2015/01/16/write-a-shell-in-c/
+  Adapted from https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
 int snl_execute(char** args) {
-	// If the command was null
-	if (args[0] == NULL) {
-		return 1;
-	}
+  // If the command was null
+  if (args[0] == NULL) {
+    return 1;
+  }
 
-	for (int i=0; i<snl_builtins_number(); i++) {
-		if (!strcmp(args[0], snl_builtins_names[i])) {
-			// TODO: call the built-in function
-			printf("BUILTINS\n");
-		}
-	}
-	return snl_fork(args);
+  for (int i=0; i<snl_builtins_number(); i++) {
+    if (!strcmp(args[0], snl_builtins_names[i])) {
+      // TODO: call the built-in function
+      printf("BUILTINS\n");
+    }
+  }
+  return snl_fork(args);
 }
 
 /*
-	Launches a child process
-	Inputs: The user-inputted line of command stored in an array of arrays
-	Returns: 1
+  Launches a child process
+  Inputs: The user-inputted line of command stored in an array of arrays
+  Returns: 1
 
-	Using Brennan's implementation and https://github.com/jmreyes/simple-c-shell
+  Using Brennan's implementation and https://github.com/jmreyes/simple-c-shell
 */
 int snl_fork(char **args){
   pid_t pid = fork();
   int status;
 
   if(pid == 0){
-		// CHILD PROCESS
+  // CHILD PROCESS
     // If non-exisiting commands are launched, end process
     if(execvp(*args, args) < 0){
       perror("snl");
@@ -143,7 +143,7 @@ int snl_fork(char **args){
   } else if(pid < 0){
     perror("snl");
   } else{
-		// PARENT PROCESS
+  // PARENT PROCESS
     do{
       waitpid(pid, &status, WUNTRACED); // TODO: may need to be wpid = waitpid
     } while(!WIFEXITED(status) && !WIFSIGNALED(status));
@@ -154,7 +154,7 @@ int snl_fork(char **args){
 /*
  	Main function of the shell
 
-	Using Brennan's implementation of main
+  Using Brennan's implementation of main
  	https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
 int main(int argc, char **argv){
