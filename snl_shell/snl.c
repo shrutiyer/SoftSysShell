@@ -10,6 +10,7 @@ This program is an implementation of a shell with a few basic UNIX commands
 #include <unistd.h>
 #include <sys/wait.h>
 #include <stdlib.h>
+#include "builtins.c"
 
 // TODO: This is it folks, only 100 commands at a time
 #define MAXARGS 100
@@ -24,18 +25,6 @@ int snl_fork(char **args);
 int main(int argc, char **argv);
 int snl_detect_pipe(char* line, char** args, char** args2);
 int snl_forkpipe(char** args, char** args2);
-
-// An array of strings with built-in command names
-char* snl_builtins_names[] = {"cd"};
-
-/*
-	Calculates the number of built-in commcdands
-	Inputs: Nothing
-	Returns: Number of built-ins
-*/
-int snl_builtins_number() {
-	return sizeof(snl_builtins_names)/sizeof(char*);
-}
 
 /*
 	Main loop of the shell program
@@ -75,6 +64,10 @@ char* snl_read_line(void){
 	char* line;
 	ssize_t buffersize = 0;
 	getline(&line, &buffersize, stdin);
+	// Remove trailing \n character with end of line
+	if (line[strlen(line)-1]=='\n') {
+		line[strlen(line)-1]='\0';
+	}
 	return line;
 }
 
@@ -91,7 +84,6 @@ void snl_split_line(char* line, char** args){
 	for (int i = 0; i < MAXARGS; i++) {
 		// Get each arg seperated by space
 		args[i] = strsep(&line, " ");
-    // printf("%s\n", args[i]);
 
 		if (args[i] == NULL){
 			break; // end of line
@@ -138,14 +130,15 @@ int snl_detect_pipe(char* line, char** args, char** args2){
 */
 int snl_execute(char** args, char** args2, int piped) {
 	// If the command was null
+  printf("1 %s\n", args[0]);
+  printf("2 %s\n", args2[0]);
 	if (args[0] == NULL) {
 		return 1;
 	}
 
 	for (int i=0; i<snl_builtins_number(); i++) {
 		if (!strcmp(args[0], snl_builtins_names[i])) {
-			// TODO: call the built-in function
-			printf("BUILTINS\n");
+			return (*snl_builtin_func[i])(args);
 		}
 	}
   if (!piped){
@@ -169,7 +162,7 @@ int snl_fork(char **args){
   if(pid == 0){
 		// CHILD PROCESS
     // If non-exisiting commands are launched, end process
-    if(execvp(args[0], args) == -1){
+    if(execvp(*args, args) < 0){
       perror("snl");
       kill(getpid(), SIGTERM);
     }
@@ -217,11 +210,11 @@ int snl_forkpipe(char** args, char** args2){
     }
 
     if (pid2 == 0) {
-    close(piping[1]);
-    dup2(piping[0], STDIN_FILENO); //http://codewiki.wikidot.com/c:system-calls:dup2
-    close(piping[0]);
+      close(piping[1]);
+      dup2(piping[0], STDIN_FILENO); //http://codewiki.wikidot.com/c:system-calls:dup2
+      close(piping[0]);
 
-      if(execvp(args[0], args) == -1){
+      if(execvp(args2[0], args2) == -1){
         perror("snl");
         kill(getpid(), SIGTERM);
       }
