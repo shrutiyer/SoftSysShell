@@ -10,6 +10,7 @@ This program is an implementation of a shell with a few basic UNIX commands
 #include <unistd.h>
 #include <sys/wait.h>
 #include <stdlib.h>
+#include "builtins.c"
 
 // TODO: This is it folks, only 100 commands at a time
 #define MAXARGS 100
@@ -22,18 +23,6 @@ void snl_split_line(char* line, char** args);
 int snl_execute(char** args);
 int snl_fork(char **args);
 int main(int argc, char **argv);
-
-// An array of strings with built-in command names
-char* snl_builtins_names[] = {"cd"};
-
-/*
-	Calculates the number of built-in commands
-	Inputs: Nothing
-	Returns: Number of built-ins
-*/
-int snl_builtins_number() {
-	return sizeof(snl_builtins_names)/sizeof(char*);
-}
 
 /*
 	Main loop of the shell program
@@ -128,7 +117,7 @@ int snl_fork(char **args){
   if(pid == 0){
 		// CHILD PROCESS
     // If non-exisiting commands are launched, end process
-    if(execvp(args[0], args) == -1){
+    if(execvp(*args, args) < 0){
       perror("snl");
       kill(getpid(), SIGTERM);
     }
