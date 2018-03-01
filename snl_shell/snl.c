@@ -202,9 +202,10 @@ int snl_fork(char **args){
 */
 int snl_forkpipe(char** args, char** args2){
   pid_t pid1, pid2;
-  int piping[2];
-
-  if (pipe(piping) < 0){ // https://www.geeksforgeeks.org/pipe-system-call/
+  // used to keep track of each end of the file descriptor
+  //see https://www.geeksforgeeks.org/pipe-system-call/
+  int pipefd[2]; 
+  if (pipe(pipefd) < 0){ 
     printf("%s\n", "pipe isn't working");
     exit(EXIT_FAILURE);
   }
@@ -214,9 +215,13 @@ int snl_forkpipe(char** args, char** args2){
     exit(EXIT_FAILURE);
   }
   if (pid1 == 0){
-    close(piping[0]);
-    dup2(piping[0], STDOUT_FILENO); //http://codewiki.wikidot.com/c:system-calls:dup2
-    close(piping[1]);
+    // close closes the file descriptor
+    // see http://codewiki.wikidot.com/c:system-calls:close
+    close(pipefd[0]);
+    // dup2 takes source and destination file descriptors
+    // see http://codewiki.wikidot.com/c:system-calls:dup2
+    dup2(pipefd[0], STDOUT_FILENO);
+    close(pipefd[1]);
 
     if(execvp(args[0], args) == -1){
       perror("snl");
@@ -232,9 +237,9 @@ int snl_forkpipe(char** args, char** args2){
     }
 
     if (pid2 == 0) {
-      close(piping[1]);
-      dup2(piping[0], STDIN_FILENO);
-      close(piping[0]);
+      close(pipefd[1]);
+      dup2(pipefd[0], STDIN_FILENO);
+      close(pipefd[0]);
 
       if(execvp(args2[0], args2) == -1){
         perror("snl");
