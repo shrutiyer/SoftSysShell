@@ -8,10 +8,10 @@ int (*snl_builtin_func[]) (char **) = {
 };
 
 /*
-	Calculates the number of built-in commands
-	Inputs: Nothing
-	Returns: Number of built-ins
+  Calculates the number of built-in commands
+  Inputs: Nothing
+  Returns: Number of built-ins
 */
 int snl_builtins_number() {
-	return sizeof(snl_builtins_names)/sizeof(char*);
+  return sizeof(snl_builtins_names)/sizeof(char*);
 }
