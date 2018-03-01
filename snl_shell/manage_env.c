@@ -7,11 +7,8 @@ int snl_setenv(char **args, char** environ) {
   // no value, only key
   if (args[1] == NULL) {
     printf("%s\n", "cannot setenv with no args");
-    return 1;
-  }
-
-  if (args[2] == NULL){
-    // https://linux.die.net/man/3/setenv
+  } else if (args[2] == NULL){
+    // see https://linux.die.net/man/3/setenv
     setenv(args[1], "", 1);
   } else {
     setenv(args[1], args[2], 1);
@@ -21,6 +18,14 @@ int snl_setenv(char **args, char** environ) {
 }
 
 int snl_unsetenv(char **args, char** environ) {
+  if (args[1] == NULL) {
+    printf("%s\n", "cannot unsetenv with no args");
+  } else if (getenv(args[1]) == NULL) {
+    printf("%s\n", "cannot unset env arg that does not exist");
+  } else {
+    // see https://linux.die.net/man/3/unsetenv
+    unsetenv(args[1]);
+  }
   return 1;
 }
 
