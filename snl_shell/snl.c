@@ -23,10 +23,11 @@ void snl_split_line(char* line, char** args);
 int snl_execute(char** args, char** args2, int piped);
 int snl_fork(char **args);
 char* get_cwd();
-int main(int argc, char **argv);
+int main(int argc, char **argv, char** envp);
 int snl_detect_pipe(char* line, char** args, char** args2);
 int snl_forkpipe(char** args, char** args2);
 
+extern char** environ;
 /*
   Main loop of the shell program
   Inputs: Nothing
@@ -153,7 +154,7 @@ int snl_execute(char** args, char** args2, int piped) {
 
 	for (int i=0; i<snl_builtins_number(); i++) {
 		if (!strcmp(args[0], snl_builtins_names[i])) {
-			return (*snl_builtin_func[i])(args);
+			return (*snl_builtin_func[i])(args, environ);
 		}
 	}
   if (!piped){
@@ -259,10 +260,12 @@ int snl_forkpipe(char** args, char** args2){
   Using Brennan's implementation of main
  	https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-int main(int argc, char **argv){
+int main(int argc, char **argv, char** envp){
   // Load config files, if any.
 
   // Run command loop.
+  environ = envp; 
+
   snl_loop();
 
   // Perform any shutdown/cleanup.
