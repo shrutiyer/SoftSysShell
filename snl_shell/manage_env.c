@@ -1,6 +1,9 @@
-// #include "snl.c"
+// Environment management built in functions
 
 /*
+  Sets new environment variable
+  Inputs: char** of args (first is the key second is the value) and char** the current env
+  Returns: 1
   
 */
 int snl_setenv(char **args, char** environ) {
@@ -17,6 +20,12 @@ int snl_setenv(char **args, char** environ) {
   return 1;
 }
 
+/*
+  Removes environment variable
+  Inputs: char** of args (args[1] is the key to be removed from the env) and char** the current env
+  Returns: 1
+  
+*/
 int snl_unsetenv(char **args, char** environ) {
   if (args[1] == NULL) {
     printf("%s\n", "cannot unsetenv with no args");
@@ -31,7 +40,7 @@ int snl_unsetenv(char **args, char** environ) {
 
 /*
   Prints env
-  Inputs: char** of other args (which is not used) and char** environ
+  Inputs: char** of args (which is not used) and char** environ
   Returns: 1
 
   Used this resource: https://github.com/jmreyes/simple-c-shell/blob/master/simple-c-shell.c
