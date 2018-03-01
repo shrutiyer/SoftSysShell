@@ -147,8 +147,6 @@ int snl_detect_pipe(char* line, char** args, char** args2){
 */
 int snl_execute(char** args, char** args2, int piped) {
 	// If the command was null
-  printf("1 %s\n", args[0]);
-  printf("2 %s\n", args2[0]);
 	if (args[0] == NULL) {
 		return 1;
 	}
