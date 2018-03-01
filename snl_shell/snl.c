@@ -20,10 +20,12 @@ int snl_builtins_number();
 void snl_loop(void);
 char* snl_read_line(void);
 void snl_split_line(char* line, char** args);
-int snl_execute(char** args);
+int snl_execute(char** args, char** args2, int piped);
 int snl_fork(char **args);
 char* get_cwd();
 int main(int argc, char **argv);
+int snl_detect_pipe(char* line, char** args, char** args2);
+int snl_forkpipe(char** args, char** args2);
 
 /*
   Main loop of the shell program
@@ -36,13 +38,15 @@ int main(int argc, char **argv);
 void snl_loop(void) {
   char *line;
   char *args[MAXARGS];
+  char *args2[MAXARGS];
   int status;
+  int piped;
 
   do {
     printf("%s> ", get_cwd());
     line = snl_read_line();
-    snl_split_line(line, args);
-    status = snl_execute(args);
+    piped = snl_detect_pipe(line, args, args2);
+    status = snl_execute(args, args2, piped);
 
     free(line);
     // free(args);
@@ -84,11 +88,14 @@ char* snl_read_line(void){
 	return line;
 }
 
+
 /*
-  Splits line into set of args
-  Inputs: The user-inputted line of command,
-  an array of arrays to store the splitted line
-  Returns: Nothing
+	Splits line into set of args
+	Inputs: The user-inputted line of command,
+					an array of arrays to store the splitted line
+	Returns: Nothing
+
+  based off of: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
 void snl_split_line(char* line, char** args){
   for (int i = 0; i < MAXARGS; i++) {
@@ -104,13 +111,41 @@ void snl_split_line(char* line, char** args){
 }
 
 /*
-  Analyzes either to launch a child process or run a built-in command
-  Inputs: char** of the user-inputted line split with spaces
-  Returns: TODO
+  Detects pipes and splits args based on pipes
+  Inputs: the users inputed line,
+          an array which will be used as to split cmds into args
+  Returns: 0 if not piped, 1 if piped
+
+  adapted from: https://www.geeksforgeeks.org/making-linux-shell-c/
+*/
+int snl_detect_pipe(char* line, char** args, char** args2){
+  char *linepiped[2]; 
+  for (int i = 0; i < 2; i++) {
+    linepiped[i] = strsep(&line, "|");
+    if (linepiped[i] == NULL){
+      break; 
+    }
+  }
+  // if there is a second arg here there is a pipe
+  if (linepiped[1] == NULL) {
+    snl_split_line(linepiped[0], args);
+    return 0; // no pipe
+  } else {
+    snl_split_line(linepiped[0], args);
+    snl_split_line(linepiped[1], args2);
+    return 1; // pipe
+  }
+
+}
+
+/*
+	Analyzes either to launch a child process or run a built-in command
+	Inputs: char** of the user-inputted line split with spaces
+	Returns: TODO
 
   Adapted from https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-int snl_execute(char** args) {
+int snl_execute(char** args, char** args2, int piped) {
 	// If the command was null
 	if (args[0] == NULL) {
 		return 1;
@@ -121,7 +156,11 @@ int snl_execute(char** args) {
 			return (*snl_builtin_func[i])(args);
 		}
 	}
-	return snl_fork(args);
+  if (!piped){
+	  return snl_fork(args);
+  }
+  return snl_forkpipe(args, args2);
+
 }
 
 /*
@@ -150,6 +189,66 @@ int snl_fork(char **args){
     do{
       waitpid(pid, &status, WUNTRACED); // TODO: may need to be wpid = waitpid
     } while(!WIFEXITED(status) && !WIFSIGNALED(status));
+  }
+  return 1;
+}
+
+/*
+  Launches two child processes piping the first to the second
+  Inputs: Two (before and after pipe) user-inputted line of command stored in an array of arrays
+  Returns: 1
+
+  Mix of Brennan's implementation and https://www.geeksforgeeks.org/making-linux-shell-c/
+*/
+int snl_forkpipe(char** args, char** args2){
+  pid_t pid1, pid2;
+  // used to keep track of each end of the file descriptor
+  //see https://www.geeksforgeeks.org/pipe-system-call/
+  int pipefd[2]; 
+  if (pipe(pipefd) < 0){ 
+    printf("%s\n", "pipe isn't working");
+    exit(EXIT_FAILURE);
+  }
+  pid1 = fork();
+  if (pid1 < 0){
+    printf("%s\n", "pid1 won't fork");
+    exit(EXIT_FAILURE);
+  }
+  if (pid1 == 0){
+    // close closes the file descriptor
+    // see http://codewiki.wikidot.com/c:system-calls:close
+    close(pipefd[0]);
+    // dup2 takes source and destination file descriptors
+    // see http://codewiki.wikidot.com/c:system-calls:dup2
+    dup2(pipefd[0], STDOUT_FILENO);
+    close(pipefd[1]);
+
+    if(execvp(args[0], args) == -1){
+      perror("snl");
+      kill(getpid(), SIGTERM);
+    }
+  } else {
+    //PARENT PROCESS
+    pid2 = fork();
+
+    if (pid2 < 0){
+      printf("%s\n", "pid2 won't fork");
+      exit(EXIT_FAILURE);
+    }
+
+    if (pid2 == 0) {
+      close(pipefd[1]);
+      dup2(pipefd[0], STDIN_FILENO);
+      close(pipefd[0]);
+
+      if(execvp(args2[0], args2) == -1){
+        perror("snl");
+        kill(getpid(), SIGTERM);
+      }
+    } else {
+      wait(NULL);
+      wait(NULL);
+    }
   }
   return 1;
 }
