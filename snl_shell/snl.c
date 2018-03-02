@@ -91,7 +91,7 @@ char* snl_read_line(void){
 
 
 /*
-	Splits line into set of args
+	Splits line into set of args, replaces args with environment val when specified
 	Inputs: The user-inputted line of command,
 					an array of arrays to store the splitted line
 	Returns: Nothing
@@ -107,6 +107,23 @@ void snl_split_line(char* line, char** args){
       break; // end of line
     } else if (strlen(args[i]) == 0) {
       i--; // re-write over empty entry
+    } else {
+      if (args[i][0] == 36){ // 36 is $
+        char** env_elm;
+        for (env_elm = environ; *env_elm != 0; env_elm ++ ){
+            char* keyval[2]; 
+            char* elm_dup = strdup(*env_elm); // dup elm so we don't edit actual env
+            for (int i = 0; i < 2; i++) {
+              keyval[i] = strsep(&elm_dup, "=");
+              if (keyval[i] == NULL){
+                  break; 
+              }
+            }
+            if (strcmp(args[i] + 1, keyval[0]) == 0) {
+              args[i] = keyval[1]; // replace arg with env val
+            }
+        }
+      }
     }
   }
 }
@@ -157,6 +174,7 @@ int snl_execute(char** args, char** args2, int piped) {
 			return (*snl_builtin_func[i])(args, environ);
 		}
 	}
+
   if (!piped){
 	  return snl_fork(args);
   }
