@@ -77,22 +77,22 @@ char* get_cwd() {
   Based off of Brennan's implementation
 */
 char* snl_read_line(void){
-	char* line;
-	ssize_t buffersize = 0;
-	getline(&line, &buffersize, stdin);
-	// Remove trailing \n character with end of line
-	if (line[strlen(line)-1]=='\n') {
-		line[strlen(line)-1]='\0';
-	}
-	return line;
+  char* line;
+  ssize_t buffersize = 0;
+  getline(&line, &buffersize, stdin);
+  // Remove trailing \n character with end of line
+  if (line[strlen(line)-1]=='\n') {
+    line[strlen(line)-1]='\0';
+  }
+  return line;
 }
 
 
 /*
-	Splits line into set of args
-	Inputs: The user-inputted line of command,
-					an array of arrays to store the splitted line
-	Returns: Nothing
+  Splits line into set of args
+  Inputs: The user-inputted line of command,
+          an array of arrays to store the splitted line
+  Returns: Nothing
 
   based off of: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
@@ -124,26 +124,26 @@ int snl_detect_pipe(char** args){
 }
 
 /*
-	Analyzes either to run a built-in command or launch child processes
-	Inputs: char** of the user-inputted line split with spaces
-	Returns: TODO
+  Analyzes either to run a built-in command or launch child processes
+  Inputs: char** of the user-inputted line split with spaces
+  Returns: TODO
 
   Adapted from https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
 int snl_execute(char** args) {
-	// If the command was null
-	if (args[0] == NULL) {
-		return 1;
-	}
+  // If the command was null
+  if (args[0] == NULL) {
+    return 1;
+  }
 
-	for (int i=0; i<snl_builtins_number(); i++) {
-		if (!strcmp(args[0], snl_builtins_names[i])) {
-			return (*snl_builtin_func[i])(args);
-		}
-	}
+  for (int i=0; i<snl_builtins_number(); i++) {
+    if (!strcmp(args[0], snl_builtins_names[i])) {
+      return (*snl_builtin_func[i])(args);
+    }
+  }
   // If there's a pipe present
   if (snl_detect_pipe(args) == 1){
-	  return snl_forkpipe(args);
+    return snl_forkpipe(args);
   }
   /* TODO: If there's file I/O redirection present, do that
     return snl_fork_io(args);
@@ -217,110 +217,110 @@ int snl_forkpipe(char* args[]){
   int l = 0;
   int i = 0;
 
-  while (args[j] != NULL && end != 1){
-  		k = 0;
-  		while (strcmp(args[j],"|") != 0){
-  			command[k] = args[j];
-  			j++;
-  			if (args[j] == NULL){
-  				end = 1;
-  				k++;
-  				break;
-  			}
-  			k++;
-  		}
-  		// Last position of command is NULL to indicate you are at the end
-  		command[k] = NULL;
-  		j++;
+  while(args[j] != NULL && end != 1){
+      k = 0;
+      while (strcmp(args[j],"|") != 0){
+        command[k] = args[j];
+        j++;
+        if(args[j] == NULL){
+          end = 1;
+          k++;
+          break;
+        }
+        k++;
+      }
+      // Last position of command is NULL to indicate you are at the end
+      command[k] = NULL;
+      j++;
 
-  		// allows a pipe to be shared between each two iterations, so inputs and
+      // allows a pipe to be shared between each two iterations, so inputs and
       // outputs two different commands are connected
-  		if (i % 2 != 0){
-  			pipe(filedes); // for odd i
-  		}else{
-  			pipe(filedes2); // for even i
-  		}
+      if(i % 2 != 0){
+        pipe(filedes); // for odd i
+      } else{
+        pipe(filedes2); // for even i
+      }
 
-  		pid=fork();
+      pid=fork();
 
-  		if(pid==-1){
-  			if (i != num_commands - 1){ //if it's not the last command
-  				if (i % 2 != 0){
-  					close(filedes[1]); // for odd i
-  				}else{
-  					close(filedes2[1]); // for even i
-  				}
-  			}
-  			perror("snl");
-  			return 1;
-  		}
-  		if(pid==0){
-  			// if first command
-  			if (i == 0){
-  				dup2(filedes2[1], STDOUT_FILENO);
-  			}
-  			// if last command, replace stain depending on if we're in
+      if(pid==-1){
+        if(i != num_commands - 1){ //if it's not the last command
+          if(i % 2 != 0){
+            close(filedes[1]); // for odd i
+          } else{
+            close(filedes2[1]); // for even i
+          }
+        }
+        perror("snl");
+        return 1;
+      }
+      if(pid==0){
+        // if first command
+        if(i == 0){
+          dup2(filedes2[1], STDOUT_FILENO);
+        }
+        // if last command, replace stain depending on if we're in
         //an even or an odd position.
-  			else if (i == num_commands - 1){
-  				if (num_commands % 2 != 0){ // for odd # of commands
-  					dup2(filedes[0],STDIN_FILENO);
-  				}else{ // for even # of commands
-  					dup2(filedes2[0],STDIN_FILENO);
-  				}
-  			// if command is inbetween two pipes, use one for input
+        else if(i == num_commands - 1){
+          if(num_commands % 2 != 0){ // for odd # of commands
+            dup2(filedes[0],STDIN_FILENO);
+          } else{ // for even # of commands
+            dup2(filedes2[0],STDIN_FILENO);
+          }
+        // if command is inbetween two pipes, use one for input
         // and other for output
-      }else{
-  				if (i % 2 != 0){ // for odd command
-  					dup2(filedes2[0],STDIN_FILENO);
-  					dup2(filedes[1],STDOUT_FILENO);
-  				}else{ // for even command
-  					dup2(filedes[0],STDIN_FILENO);
-  					dup2(filedes2[1],STDOUT_FILENO);
-  				}
-  			}
+      } else{
+          if(i % 2 != 0){ // for odd command
+            dup2(filedes2[0],STDIN_FILENO);
+            dup2(filedes[1],STDOUT_FILENO);
+          } else{ // for even command
+            dup2(filedes[0],STDIN_FILENO);
+            dup2(filedes2[1],STDOUT_FILENO);
+          }
+        }
 
         // If non-existing commands are launched, end process
-  			if (execvp(command[0],command)==err){
+        if(execvp(command[0],command)==err){
           perror("snl");
-  				kill(getpid(),SIGTERM);
-  			}
-  		}
+          kill(getpid(),SIGTERM);
+        }
+      }
 
-  		// close descriptors for parent
-  		if (i == 0){
-  			close(filedes2[1]);
-  		}
-  		else if (i == num_commands - 1){
-  			if (num_commands % 2 != 0){
-  				close(filedes[0]);
-  			}else{
-  				close(filedes2[0]);
-  			}
-  		}else{
-  			if (i % 2 != 0){
-  				close(filedes2[0]);
-  				close(filedes[1]);
-  			}else{
-  				close(filedes[0]);
-  				close(filedes2[1]);
-  			}
-  		}
+      // close descriptors for parent
+      if(i == 0){
+        close(filedes2[1]);
+      }
+      else if(i == num_commands - 1){
+        if(num_commands % 2 != 0){
+          close(filedes[0]);
+        } else{
+          close(filedes2[0]);
+        }
+      } else{
+        if(i % 2 != 0){
+          close(filedes2[0]);
+          close(filedes[1]);
+        } else{
+          close(filedes[0]);
+          close(filedes2[1]);
+        }
+      }
 
       do{
         waitpid(pid, &status, WUNTRACED);
       } while(!WIFEXITED(status) && !WIFSIGNALED(status));
 
-  		i++;
-  	}
+      i++;
+    }
 
   return 1;
 }
 
 /*
- 	Main function of the shell
+  Main function of the shell
 
   Using Brennan's implementation of main
- 	https://brennan.io/2015/01/16/write-a-shell-in-c/
+  https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
 int main(int argc, char **argv){
   // Load config files, if any.
