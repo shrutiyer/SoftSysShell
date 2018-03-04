@@ -194,18 +194,23 @@ int snl_forkpipe(char* args[]){
   int filedes2[2];
   int num_commands = 0;
   char *command[256];
+  int status;
   pid_t pid;
 
   int err = -1;
   int end = 0;
 
-  // Calculate number of commands
+  // Find # of commands
   for(int i = 0; args[i] != NULL; i++){
     if (strcmp(args[i],"|") == 0){
+      if(args[i+1] == NULL){
+        puts("snl: cannot end command with pipe");
+        return 1;
+      }
       num_commands++;
     }
   }
-  num_commands++;
+  num_commands++; //because #commands = #pipes + 1
 
   int k = 0;
   int j = 0;
@@ -224,8 +229,7 @@ int snl_forkpipe(char* args[]){
   			}
   			k++;
   		}
-  		// Last position of the command will be NULL to indicate that
-  		// it is its end when we pass it to the exec function
+  		// Last position of command is NULL to indicate you are at the end
   		command[k] = NULL;
   		j++;
 
@@ -309,58 +313,6 @@ int snl_forkpipe(char* args[]){
   		i++;
   	}
 
-
-
-//////////////////////
-  // pid_t pid1, pid2;
-  // // used to keep track of each end of the file descriptor
-  // //see https://www.geeksforgeeks.org/pipe-system-call/
-  // int pipefd[2];
-  // if (pipe(pipefd) < 0){
-  //   printf("%s\n", "pipe isn't working");
-  //   exit(EXIT_FAILURE);
-  // }
-  // pid1 = fork();
-  // if (pid1 < 0){
-  //   printf("%s\n", "pid1 won't fork");
-  //   exit(EXIT_FAILURE);
-  // }
-  // if (pid1 == 0){
-  //   // close closes the file descriptor
-  //   // see http://codewiki.wikidot.com/c:system-calls:close
-  //   close(pipefd[0]);
-  //   // dup2 takes source and destination file descriptors
-  //   // see http://codewiki.wikidot.com/c:system-calls:dup2
-  //   dup2(pipefd[0], STDOUT_FILENO);
-  //   close(pipefd[1]);
-  //
-  //   if(execvp(args[0], args) == -1){
-  //     perror("snl");
-  //     kill(getpid(), SIGTERM);
-  //   }
-  // } else {
-  //   //PARENT PROCESS
-  //   pid2 = fork();
-  //
-  //   if (pid2 < 0){
-  //     printf("%s\n", "pid2 won't fork");
-  //     exit(EXIT_FAILURE);
-  //   }
-  //
-  //   if (pid2 == 0) {
-  //     close(pipefd[1]);
-  //     dup2(pipefd[0], STDIN_FILENO);
-  //     close(pipefd[0]);
-  //
-  //     if(execvp(args2[0], args2) == -1){
-  //       perror("snl");
-  //       kill(getpid(), SIGTERM);
-  //     }
-  //   } else {
-  //     wait(NULL);
-  //     wait(NULL);
-  //   }
-  // }
   return 1;
 }
 
