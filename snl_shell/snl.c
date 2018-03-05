@@ -8,6 +8,8 @@ This program is an implementation of a shell with a few basic UNIX commands
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <stdlib.h>
 #include "builtins.c"
@@ -20,12 +22,14 @@ int snl_builtins_number();
 void snl_loop(void);
 char* snl_read_line(void);
 void snl_split_line(char* line, char** args);
-int snl_execute(char** args, char** args2, int piped);
+int snl_execute(char** args, char** args2, int piped, int redirect);
 int snl_fork(char **args);
 char* get_cwd();
 int main(int argc, char **argv);
 int snl_detect_pipe(char* line, char** args, char** args2);
+int snl_detect_redirect(char* line, char** args, char *file_name);
 int snl_forkpipe(char** args, char** args2);
+int snl_fork_redirect(char** args, char* output_file);
 
 /*
   Main loop of the shell program
@@ -39,14 +43,17 @@ void snl_loop(void) {
   char *line;
   char *args[MAXARGS];
   char *args2[MAXARGS];
+  char *redirect_file;
   int status;
   int piped;
+  int redirect;
 
   do {
     printf("%s> ", get_cwd());
     line = snl_read_line();
     piped = snl_detect_pipe(line, args, args2);
-    status = snl_execute(args, args2, piped);
+    redirect = snl_detect_redirect(line, args, redirect_file);
+    status = snl_execute(args, args2, piped, redirect);
 
     free(line);
     // free(args);
@@ -119,11 +126,11 @@ void snl_split_line(char* line, char** args){
   adapted from: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
 int snl_detect_pipe(char* line, char** args, char** args2){
-  char *linepiped[2]; 
+  char *linepiped[2];
   for (int i = 0; i < 2; i++) {
     linepiped[i] = strsep(&line, "|");
     if (linepiped[i] == NULL){
-      break; 
+      break;
     }
   }
   // if there is a second arg here there is a pipe
@@ -135,8 +142,30 @@ int snl_detect_pipe(char* line, char** args, char** args2){
     snl_split_line(linepiped[1], args2);
     return 1; // pipe
   }
+}
+
+int snl_detect_redirect(char* line, char** args, char *file_name){
+  char *redirect_line[2];
+  for (int i = 0; i < 1; i++) {
+    redirect_line[i] = strsep(&line, ">");
+    if (redirect_line[i] == NULL){
+      break;
+    }
+  }
+
+  // if there is a second arg/file here there is a redirect
+  if (redirect_line[1] == NULL) {
+    snl_split_line(redirect_line[0], args);
+    return 0; // no redirect
+  } else {
+    snl_split_line(redirect_line[0], args);
+    file_name = redirect_line[1];
+    return 1; // redirect
+  }
 
 }
+
+
 
 /*
 	Analyzes either to launch a child process or run a built-in command
@@ -145,7 +174,7 @@ int snl_detect_pipe(char* line, char** args, char** args2){
 
   Adapted from https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-int snl_execute(char** args, char** args2, int piped) {
+int snl_execute(char** args, char** args2, int piped, int redirect) {
 	// If the command was null
 	if (args[0] == NULL) {
 		return 1;
@@ -156,7 +185,7 @@ int snl_execute(char** args, char** args2, int piped) {
 			return (*snl_builtin_func[i])(args);
 		}
 	}
-  if (!piped){
+  if (!piped && !redirect){
 	  return snl_fork(args);
   }
   return snl_forkpipe(args, args2);
@@ -204,8 +233,8 @@ int snl_forkpipe(char** args, char** args2){
   pid_t pid1, pid2;
   // used to keep track of each end of the file descriptor
   //see https://www.geeksforgeeks.org/pipe-system-call/
-  int pipefd[2]; 
-  if (pipe(pipefd) < 0){ 
+  int pipefd[2];
+  if (pipe(pipefd) < 0){
     printf("%s\n", "pipe isn't working");
     exit(EXIT_FAILURE);
   }
@@ -251,6 +280,30 @@ int snl_forkpipe(char** args, char** args2){
     }
   }
   return 1;
+}
+
+/*
+
+*/
+int snl_fork_redirect(char** args, char* output_file) {
+  int file_descriptor;
+  pid_t pid = fork();
+
+  if (pid == -1) {
+    printf("Fork could not create a child process\n");
+  } else if (pid == 0) {
+    // Open a  file to write to it
+    file_descriptor = open(output_file, O_CREAT | O_TRUNC | O_WRONLY, 0600);
+		// Replace standard output with appropriate file
+		dup2(file_descriptor, STDOUT_FILENO);
+    close(file_descriptor);
+
+    if (execvp(args[0], args) == -1){
+  		perror("snl fork redirect");
+  		kill(getpid(),SIGTERM);
+    }
+  }
+  waitpid(pid, NULL, 0);
 }
 
 /*
