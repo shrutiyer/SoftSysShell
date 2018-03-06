@@ -21,9 +21,9 @@ void snl_loop(void);
 char* snl_read_line(void);
 int snl_split_line(char* line, char** args);
 int snl_execute(char** args);
-int snl_fork(char **args);
+int snl_fork(char** args);
 char* get_cwd();
-int main(int argc, char **argv, char **envp);
+int main(int argc, char** argv, char** envp);
 int snl_detect_pipe(char** args);
 int snl_forkpipe(char** args);
 
@@ -37,8 +37,8 @@ extern char** environ;
   main loop https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
 void snl_loop(void) {
-  char *line;
-  char *args[MAXARGS];
+  char* line;
+  char* args[MAXARGS];
   int status;
   int piped;
   int split;
@@ -216,7 +216,7 @@ int snl_forkpipe(char* args[]){
   int filedes[2];
   int filedes2[2];
   int num_commands = 0;
-  char *command[256];
+  char* command[256];
   int status;
   pid_t pid;
 
