@@ -22,7 +22,7 @@ int snl_builtins_number();
 void snl_loop(void);
 char* snl_read_line(void);
 void snl_split_line(char* line, char** args);
-int snl_execute(char** args, char** args2, int piped, int redirect);
+int snl_execute(char** args, char** args2, int piped, int redirect, char *output_file);
 int snl_fork(char **args);
 char* get_cwd();
 int main(int argc, char **argv);
@@ -41,6 +41,7 @@ int snl_fork_redirect(char** args, char* output_file);
 */
 void snl_loop(void) {
   char *line;
+  char *redirect_line;
   char *args[MAXARGS];
   char *args2[MAXARGS];
   char *redirect_file;
@@ -51,11 +52,13 @@ void snl_loop(void) {
   do {
     printf("%s> ", get_cwd());
     line = snl_read_line();
+    redirect_line = strdup(line);
     piped = snl_detect_pipe(line, args, args2);
-    redirect = snl_detect_redirect(line, args, redirect_file);
-    status = snl_execute(args, args2, piped, redirect);
+    redirect = snl_detect_redirect(redirect_line, args, redirect_file);
+    status = snl_execute(args, args2, piped, redirect, redirect_file);
 
     free(line);
+    free(redirect_line);
     // free(args);
   } while (status);
 }
@@ -146,19 +149,19 @@ int snl_detect_pipe(char* line, char** args, char** args2){
 
 int snl_detect_redirect(char* line, char** args, char *file_name){
   char *redirect_line[2];
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 2; i++) {
     redirect_line[i] = strsep(&line, ">");
     if (redirect_line[i] == NULL){
       break;
     }
   }
-
   // if there is a second arg/file here there is a redirect
   if (redirect_line[1] == NULL) {
     snl_split_line(redirect_line[0], args);
     return 0; // no redirect
   } else {
     snl_split_line(redirect_line[0], args);
+    // TODO: Fix the whitespace problem with filename
     file_name = redirect_line[1];
     return 1; // redirect
   }
@@ -174,7 +177,7 @@ int snl_detect_redirect(char* line, char** args, char *file_name){
 
   Adapted from https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-int snl_execute(char** args, char** args2, int piped, int redirect) {
+int snl_execute(char** args, char** args2, int piped, int redirect, char *output_file) {
 	// If the command was null
 	if (args[0] == NULL) {
 		return 1;
@@ -185,10 +188,13 @@ int snl_execute(char** args, char** args2, int piped, int redirect) {
 			return (*snl_builtin_func[i])(args);
 		}
 	}
-  if (!piped && !redirect){
-	  return snl_fork(args);
+  if (piped) {
+	  return snl_forkpipe(args, args2);
+  } else if (redirect) {
+    return snl_fork_redirect(args, output_file);
+  } else {
+    return snl_fork(args);
   }
-  return snl_forkpipe(args, args2);
 
 }
 
@@ -297,9 +303,11 @@ int snl_fork_redirect(char** args, char* output_file) {
 		// Replace standard output with appropriate file
 		dup2(file_descriptor, STDOUT_FILENO);
     close(file_descriptor);
+    printf("IN HEREEEE\n");
 
     if (execvp(args[0], args) == -1){
-  		perror("snl fork redirect");
+      printf("COOOOOOL\n");
+      perror("snl fork redirect");
   		kill(getpid(),SIGTERM);
     }
   }
