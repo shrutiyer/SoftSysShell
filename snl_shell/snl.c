@@ -44,7 +44,7 @@ void snl_loop(void) {
   char *redirect_line;
   char *args[MAXARGS];
   char *args2[MAXARGS];
-  char *redirect_file;
+  char *redirect_file=malloc(sizeof(char)*100);
   int status;
   int piped;
   int redirect;
@@ -80,6 +80,22 @@ char* get_cwd() {
   return ptr;
 }
 
+/*
+  Removes whitespace from a string
+
+  With the help of https://stackoverflow.com/questions/1726302/removing-spaces-from-a-string-in-c
+*/
+void remove_space(char *str) {
+  char *end_pointer = str;
+  while (*end_pointer) {
+    if (*end_pointer == ' ') {
+      end_pointer++;
+    } else {
+      *str++ = *end_pointer++;
+    }
+  }
+  *str++ = '\0';
+}
 /*
   Reads the line from standard input
   Inputs: Nothing
@@ -161,8 +177,8 @@ int snl_detect_redirect(char* line, char** args, char *file_name){
     return 0; // no redirect
   } else {
     snl_split_line(redirect_line[0], args);
-    // TODO: Fix the whitespace problem with filename
-    file_name = redirect_line[1];
+    remove_space(redirect_line[1]);  // Remove any whitespace in the file name
+    strcpy(file_name, redirect_line[1]);
     return 1; // redirect
   }
 
@@ -294,19 +310,20 @@ int snl_forkpipe(char** args, char** args2){
 int snl_fork_redirect(char** args, char* output_file) {
   int file_descriptor;
   pid_t pid = fork();
-
   if (pid == -1) {
     printf("Fork could not create a child process\n");
   } else if (pid == 0) {
+
     // Open a  file to write to it
     file_descriptor = open(output_file, O_CREAT | O_TRUNC | O_WRONLY, 0600);
+    if (file_descriptor < 0) {
+      perror("Incorrect file given for redirect");
+    }
 		// Replace standard output with appropriate file
-		dup2(file_descriptor, STDOUT_FILENO);
+		dup2(file_descriptor, 1);
     close(file_descriptor);
-    printf("IN HEREEEE\n");
 
     if (execvp(args[0], args) == -1){
-      printf("COOOOOOL\n");
       perror("snl fork redirect");
   		kill(getpid(),SIGTERM);
     }
