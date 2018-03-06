@@ -23,10 +23,11 @@ void snl_split_line(char* line, char** args);
 int snl_execute(char** args, char** args2, int piped);
 int snl_fork(char **args);
 char* get_cwd();
-int main(int argc, char **argv);
+int main(int argc, char **argv, char** envp);
 int snl_detect_pipe(char* line, char** args, char** args2);
 int snl_forkpipe(char** args, char** args2);
 
+extern char** environ;
 /*
   Main loop of the shell program
   Inputs: Nothing
@@ -90,7 +91,7 @@ char* snl_read_line(void){
 
 
 /*
-	Splits line into set of args
+	Splits line into set of args, replaces args with environment val when specified
 	Inputs: The user-inputted line of command,
 					an array of arrays to store the splitted line
 	Returns: Nothing
@@ -106,6 +107,23 @@ void snl_split_line(char* line, char** args){
       break; // end of line
     } else if (strlen(args[i]) == 0) {
       i--; // re-write over empty entry
+    } else {
+      if (strcmp(&args[i][0], "$")){ // 36 is $
+        char** env_elm;
+        for (env_elm = environ; *env_elm != 0; env_elm ++ ){
+            char* keyval[2];
+            char* elm_dup = strdup(*env_elm); // dup elm so we don't edit actual env
+            for (int i = 0; i < 2; i++) {
+              keyval[i] = strsep(&elm_dup, "=");
+              if (keyval[i] == NULL){
+                  break;
+              }
+            }
+            if (strcmp(args[i] + 1, keyval[0]) == 0) {
+              args[i] = keyval[1]; // replace arg with env val
+            }
+        }
+      }
     }
   }
 }
@@ -119,11 +137,11 @@ void snl_split_line(char* line, char** args){
   adapted from: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
 int snl_detect_pipe(char* line, char** args, char** args2){
-  char *linepiped[2]; 
+  char *linepiped[2];
   for (int i = 0; i < 2; i++) {
     linepiped[i] = strsep(&line, "|");
     if (linepiped[i] == NULL){
-      break; 
+      break;
     }
   }
   // if there is a second arg here there is a pipe
@@ -153,9 +171,10 @@ int snl_execute(char** args, char** args2, int piped) {
 
 	for (int i=0; i<snl_builtins_number(); i++) {
 		if (!strcmp(args[0], snl_builtins_names[i])) {
-			return (*snl_builtin_func[i])(args);
+			return (*snl_builtin_func[i])(args, environ);
 		}
 	}
+
   if (!piped){
 	  return snl_fork(args);
   }
@@ -204,8 +223,8 @@ int snl_forkpipe(char** args, char** args2){
   pid_t pid1, pid2;
   // used to keep track of each end of the file descriptor
   //see https://www.geeksforgeeks.org/pipe-system-call/
-  int pipefd[2]; 
-  if (pipe(pipefd) < 0){ 
+  int pipefd[2];
+  if (pipe(pipefd) < 0){
     printf("%s\n", "pipe isn't working");
     exit(EXIT_FAILURE);
   }
@@ -259,10 +278,12 @@ int snl_forkpipe(char** args, char** args2){
   Using Brennan's implementation of main
  	https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-int main(int argc, char **argv){
+int main(int argc, char **argv, char** envp){
   // Load config files, if any.
 
   // Run command loop.
+  environ = envp;
+
   snl_loop();
 
   // Perform any shutdown/cleanup.

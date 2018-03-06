@@ -1,10 +1,14 @@
 #include "exit.c"
+#include "manage_env.c"
 
 // An array of strings with built-in command names
-char* snl_builtins_names[] = {"exit"};
+char* snl_builtins_names[] = {"exit", "setenv", "unsetenv", "getenv"};
 
-int (*snl_builtin_func[]) (char **) = {
-  &snl_exit
+int (*snl_builtin_func[]) (char **, char**) = {
+  &snl_exit,
+  &snl_setenv,
+  &snl_unsetenv,
+  &snl_getenv
 };
 
 /*
