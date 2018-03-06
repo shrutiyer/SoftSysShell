@@ -19,13 +19,13 @@ This program is an implementation of a shell with a few basic UNIX commands
 int snl_builtins_number();
 void snl_loop(void);
 char* snl_read_line(void);
-void snl_split_line(char* line, char** args);
-int snl_execute(char** args, char** args2, int piped);
+int snl_split_line(char* line, char** args);
+int snl_execute(char** args);
 int snl_fork(char **args);
 char* get_cwd();
-int main(int argc, char **argv, char** envp);
-int snl_detect_pipe(char* line, char** args, char** args2);
-int snl_forkpipe(char** args, char** args2);
+int main(int argc, char **argv, char **envp);
+int snl_detect_pipe(char** args);
+int snl_forkpipe(char** args);
 
 extern char** environ;
 /*
@@ -39,15 +39,15 @@ extern char** environ;
 void snl_loop(void) {
   char *line;
   char *args[MAXARGS];
-  char *args2[MAXARGS];
   int status;
   int piped;
+  int split;
 
   do {
     printf("%s> ", get_cwd());
     line = snl_read_line();
-    piped = snl_detect_pipe(line, args, args2);
-    status = snl_execute(args, args2, piped);
+    split = snl_split_line(line, args);
+    status = snl_execute(args);
 
     free(line);
     // free(args);
@@ -79,14 +79,14 @@ char* get_cwd() {
   Based off of Brennan's implementation
 */
 char* snl_read_line(void){
-	char* line;
-	ssize_t buffersize = 0;
-	getline(&line, &buffersize, stdin);
-	// Remove trailing \n character with end of line
-	if (line[strlen(line)-1]=='\n') {
-		line[strlen(line)-1]='\0';
-	}
-	return line;
+  char* line;
+  ssize_t buffersize = 0;
+  getline(&line, &buffersize, stdin);
+  // Remove trailing \n character with end of line
+  if (line[strlen(line)-1]=='\n') {
+    line[strlen(line)-1]='\0';
+  }
+  return line;
 }
 
 
@@ -98,7 +98,7 @@ char* snl_read_line(void){
 
   based off of: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
-void snl_split_line(char* line, char** args){
+int snl_split_line(char* line, char** args){
   for (int i = 0; i < MAXARGS; i++) {
     // Get each arg seperated by space
     args[i] = strsep(&line, " ");
@@ -126,60 +126,51 @@ void snl_split_line(char* line, char** args){
       }
     }
   }
+  return 1;
 }
 
 /*
-  Detects pipes and splits args based on pipes
-  Inputs: the users inputed line,
-          an array which will be used as to split cmds into args
+  Detects if array of arguments has a pipe as an arg
+  Inputs: an array which will be used as to split cmds into args
   Returns: 0 if not piped, 1 if piped
-
-  adapted from: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
-int snl_detect_pipe(char* line, char** args, char** args2){
-  char *linepiped[2];
-  for (int i = 0; i < 2; i++) {
-    linepiped[i] = strsep(&line, "|");
-    if (linepiped[i] == NULL){
-      break;
+int snl_detect_pipe(char** args){
+  for (int i = 0; i < MAXARGS; i++) { //TODO: make this not maxargs
+    if(args[i] == NULL){
+      return 0; // reached end, no pipe
+    }
+    if (strcmp(args[i],"|") == 0){
+      return 1; // yes pipe
     }
   }
-  // if there is a second arg here there is a pipe
-  if (linepiped[1] == NULL) {
-    snl_split_line(linepiped[0], args);
-    return 0; // no pipe
-  } else {
-    snl_split_line(linepiped[0], args);
-    snl_split_line(linepiped[1], args2);
-    return 1; // pipe
-  }
-
+  return 0; // no pipe
 }
 
 /*
-	Analyzes either to launch a child process or run a built-in command
-	Inputs: char** of the user-inputted line split with spaces
-	Returns: TODO
+  Analyzes either to run a built-in command or launch child processes
+  Inputs: char** of the user-inputted line split with spaces
+  Returns: TODO
 
   Adapted from https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-int snl_execute(char** args, char** args2, int piped) {
-	// If the command was null
-	if (args[0] == NULL) {
-		return 1;
-	}
-
-	for (int i=0; i<snl_builtins_number(); i++) {
-		if (!strcmp(args[0], snl_builtins_names[i])) {
-			return (*snl_builtin_func[i])(args, environ);
-		}
-	}
-
-  if (!piped){
-	  return snl_fork(args);
+int snl_execute(char** args) {
+  // If the command was null
+  if (args[0] == NULL) {
+    return 1;
   }
-  return snl_forkpipe(args, args2);
-
+  for (int i=0; i<snl_builtins_number(); i++) {
+    if (!strcmp(args[0], snl_builtins_names[i])) {
+      return (*snl_builtin_func[i])(args, environ);
+    }
+  }
+  // If there's a pipe present
+  if (snl_detect_pipe(args) == 1){
+    return snl_forkpipe(args);
+  }
+  /* TODO: If there's file I/O redirection present, do that
+    return snl_fork_io(args);
+  */
+  return snl_fork(args);
 }
 
 /*
@@ -217,66 +208,141 @@ int snl_fork(char **args){
   Inputs: Two (before and after pipe) user-inputted line of command stored in an array of arrays
   Returns: 1
 
-  Mix of Brennan's implementation and https://www.geeksforgeeks.org/making-linux-shell-c/
+  Mix of Brennan's implementation, https://github.com/jmreyes/simple-c-shell,
+  and https://www.geeksforgeeks.org/making-linux-shell-c/
 */
-int snl_forkpipe(char** args, char** args2){
-  pid_t pid1, pid2;
-  // used to keep track of each end of the file descriptor
-  //see https://www.geeksforgeeks.org/pipe-system-call/
-  int pipefd[2];
-  if (pipe(pipefd) < 0){
-    printf("%s\n", "pipe isn't working");
-    exit(EXIT_FAILURE);
-  }
-  pid1 = fork();
-  if (pid1 < 0){
-    printf("%s\n", "pid1 won't fork");
-    exit(EXIT_FAILURE);
-  }
-  if (pid1 == 0){
-    // close closes the file descriptor
-    // see http://codewiki.wikidot.com/c:system-calls:close
-    close(pipefd[0]);
-    // dup2 takes source and destination file descriptors
-    // see http://codewiki.wikidot.com/c:system-calls:dup2
-    dup2(pipefd[0], STDOUT_FILENO);
-    close(pipefd[1]);
+int snl_forkpipe(char* args[]){
+  int filedes[2];
+  int filedes2[2];
+  int num_commands = 0;
+  char *command[256];
+  int status;
+  pid_t pid;
 
-    if(execvp(args[0], args) == -1){
-      perror("snl");
-      kill(getpid(), SIGTERM);
-    }
-  } else {
-    //PARENT PROCESS
-    pid2 = fork();
+  int err = -1;
+  int end = 0;
 
-    if (pid2 < 0){
-      printf("%s\n", "pid2 won't fork");
-      exit(EXIT_FAILURE);
-    }
-
-    if (pid2 == 0) {
-      close(pipefd[1]);
-      dup2(pipefd[0], STDIN_FILENO);
-      close(pipefd[0]);
-
-      if(execvp(args2[0], args2) == -1){
-        perror("snl");
-        kill(getpid(), SIGTERM);
+  // Find # of commands
+  for(int i = 0; args[i] != NULL; i++){
+    if (strcmp(args[i],"|") == 0){
+      if(args[i+1] == NULL){
+        puts("snl: cannot end command with pipe");
+        return 1;
       }
-    } else {
-      wait(NULL);
-      wait(NULL);
+      num_commands++;
     }
   }
+  num_commands++; //because #commands = #pipes + 1
+
+  int k = 0;
+  int j = 0;
+  int l = 0;
+  int i = 0;
+
+  while(args[j] != NULL && end != 1){
+      k = 0;
+      while (strcmp(args[j],"|") != 0){
+        command[k] = args[j];
+        j++;
+        if(args[j] == NULL){
+          end = 1;
+          k++;
+          break;
+        }
+        k++;
+      }
+      // Last position of command is NULL to indicate you are at the end
+      command[k] = NULL;
+      j++;
+
+      // allows a pipe to be shared between each two iterations, so inputs and
+      // outputs two different commands are connected
+      if(i % 2 != 0){
+        pipe(filedes); // for odd i
+      } else{
+        pipe(filedes2); // for even i
+      }
+
+      pid=fork();
+
+      if(pid==-1){
+        if(i != num_commands - 1){ //if it's not the last command
+          if(i % 2 != 0){
+            close(filedes[1]); // for odd i
+          } else{
+            close(filedes2[1]); // for even i
+          }
+        }
+        perror("snl");
+        return 1;
+      }
+      if(pid==0){
+        // if first command
+        if(i == 0){
+          dup2(filedes2[1], STDOUT_FILENO);
+        }
+        // if last command, replace stain depending on if we're in
+        //an even or an odd position.
+        else if(i == num_commands - 1){
+          if(num_commands % 2 != 0){ // for odd # of commands
+            dup2(filedes[0],STDIN_FILENO);
+          } else{ // for even # of commands
+            dup2(filedes2[0],STDIN_FILENO);
+          }
+        // if command is inbetween two pipes, use one for input
+        // and other for output
+      } else{
+          if(i % 2 != 0){ // for odd command
+            dup2(filedes2[0],STDIN_FILENO);
+            dup2(filedes[1],STDOUT_FILENO);
+          } else{ // for even command
+            dup2(filedes[0],STDIN_FILENO);
+            dup2(filedes2[1],STDOUT_FILENO);
+          }
+        }
+
+        // If non-existing commands are launched, end process
+        if(execvp(command[0],command)==err){
+          perror("snl");
+          kill(getpid(),SIGTERM);
+        }
+      }
+
+      // close descriptors for parent
+      if(i == 0){
+        close(filedes2[1]);
+      }
+      else if(i == num_commands - 1){
+        if(num_commands % 2 != 0){
+          close(filedes[0]);
+        } else{
+          close(filedes2[0]);
+        }
+      } else{
+        if(i % 2 != 0){
+          close(filedes2[0]);
+          close(filedes[1]);
+        } else{
+          close(filedes[0]);
+          close(filedes2[1]);
+        }
+      }
+
+      do{
+        waitpid(pid, &status, WUNTRACED);
+      } while(!WIFEXITED(status) && !WIFSIGNALED(status));
+
+      i++;
+    }
+
   return 1;
 }
 
 /*
- 	Main function of the shell
+  Main function of the shell
 
   Using Brennan's implementation of main
- 	https://brennan.io/2015/01/16/write-a-shell-in-c/
+  https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
 int main(int argc, char **argv, char** envp){
   // Load config files, if any.
