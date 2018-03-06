@@ -19,14 +19,15 @@ This program is an implementation of a shell with a few basic UNIX commands
 int snl_builtins_number();
 void snl_loop(void);
 char* snl_read_line(void);
-void snl_split_line(char* line, char** args);
+int snl_split_line(char* line, char** args);
 int snl_execute(char** args);
 int snl_fork(char **args);
 char* get_cwd();
-int main(int argc, char **argv);
+int main(int argc, char **argv, char **envp);
 int snl_detect_pipe(char** args);
 int snl_forkpipe(char** args);
 
+extern char** environ;
 /*
   Main loop of the shell program
   Inputs: Nothing
@@ -90,10 +91,10 @@ char* snl_read_line(void){
 
 
 /*
-  Splits line into set of args
-  Inputs: The user-inputted line of command,
-          an array of arrays to store the splitted line
-  Returns: Nothing
+	Splits line into set of args, replaces args with environment val when specified
+	Inputs: The user-inputted line of command,
+					an array of arrays to store the splitted line
+	Returns: Nothing
 
   based off of: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
@@ -106,6 +107,23 @@ int snl_split_line(char* line, char** args){
       break; // end of line
     } else if (strlen(args[i]) == 0) {
       i--; // re-write over empty entry
+    } else {
+      if (strcmp(&args[i][0], "$")){ // 36 is $
+        char** env_elm;
+        for (env_elm = environ; *env_elm != 0; env_elm ++ ){
+            char* keyval[2];
+            char* elm_dup = strdup(*env_elm); // dup elm so we don't edit actual env
+            for (int i = 0; i < 2; i++) {
+              keyval[i] = strsep(&elm_dup, "=");
+              if (keyval[i] == NULL){
+                  break;
+              }
+            }
+            if (strcmp(args[i] + 1, keyval[0]) == 0) {
+              args[i] = keyval[1]; // replace arg with env val
+            }
+        }
+      }
     }
   }
   return 1;
@@ -118,6 +136,9 @@ int snl_split_line(char* line, char** args){
 */
 int snl_detect_pipe(char** args){
   for (int i = 0; i < MAXARGS; i++) { //TODO: make this not maxargs
+    if(args[i] == NULL){
+      return 0; // reached end, no pipe
+    }
     if (strcmp(args[i],"|") == 0){
       return 1; // yes pipe
     }
@@ -137,10 +158,9 @@ int snl_execute(char** args) {
   if (args[0] == NULL) {
     return 1;
   }
-
   for (int i=0; i<snl_builtins_number(); i++) {
     if (!strcmp(args[0], snl_builtins_names[i])) {
-      return (*snl_builtin_func[i])(args);
+      return (*snl_builtin_func[i])(args, environ);
     }
   }
   // If there's a pipe present
@@ -324,10 +344,12 @@ int snl_forkpipe(char* args[]){
   Using Brennan's implementation of main
   https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-int main(int argc, char **argv){
+int main(int argc, char **argv, char** envp){
   // Load config files, if any.
 
   // Run command loop.
+  environ = envp;
+
   snl_loop();
 
   // Perform any shutdown/cleanup.
