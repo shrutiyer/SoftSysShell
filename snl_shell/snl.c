@@ -26,6 +26,8 @@ char* get_cwd();
 int main(int argc, char** argv, char** envp);
 int snl_detect_pipe(char** args);
 int snl_forkpipe(char** args);
+int snl_detect_redirect(char** args);
+int snl_fork_redirect(char** args);
 
 extern char** environ;
 /*
@@ -147,6 +149,18 @@ int snl_detect_pipe(char** args){
   return 0; // no pipe
 }
 
+int snl_detect_redirect(char** args) {
+  for (int i = 0; i < MAXARGS; i++) { //TODO: make this not maxargs
+    if(args[i] == NULL){
+      return 0; // reached end, no pipe
+    }
+    if (strcmp(args[i],">") == 0){
+      return 1; // yes pipe
+    }
+  }
+  return 0; // no pipe
+}
+
 /*
   Analyzes either to run a built-in command or launch child processes
   Inputs: char** of the user-inputted line split with spaces
@@ -167,6 +181,11 @@ int snl_execute(char** args) {
   // If there's a pipe present
   if (snl_detect_pipe(args) == 1){
     return snl_forkpipe(args);
+  }
+  if (snl_detect_redirect(args) == 1) {
+    // REDIRECT
+    printf("REDIRECT\n");
+    return snl_fork_redirect(args);
   }
   /* TODO: If there's file I/O redirection present, do that
     return snl_fork_io(args);
@@ -336,6 +355,10 @@ int snl_forkpipe(char* args[]){
       i++;
     }
 
+  return 1;
+}
+
+int snl_fork_redirect(char** args) {
   return 1;
 }
 
