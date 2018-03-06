@@ -359,6 +359,7 @@ int snl_forkpipe(char* args[]){
 }
 
 int snl_fork_redirect(char** args) {
+
   return 1;
 }
 
