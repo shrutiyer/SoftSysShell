@@ -6,7 +6,7 @@
   Returns: 1
   
 */
-int snl_setenv(char **args, char** environ) {
+int snl_setenv(char** args, char** environ) {
   // no value, only key
   if (args[1] == NULL) {
     printf("%s\n", "cannot setenv with no args");
@@ -26,7 +26,7 @@ int snl_setenv(char **args, char** environ) {
   Returns: 1
   
 */
-int snl_unsetenv(char **args, char** environ) {
+int snl_unsetenv(char** args, char** environ) {
   if (args[1] == NULL) {
     printf("%s\n", "cannot unsetenv with no args");
   } else if (getenv(args[1]) == NULL) {
@@ -45,7 +45,7 @@ int snl_unsetenv(char **args, char** environ) {
 
   Used this resource: https://github.com/jmreyes/simple-c-shell/blob/master/simple-c-shell.c
 */
-int snl_getenv(char **args, char** environ) {
+int snl_getenv(char** args, char** environ) {
   char** env_elm;
   for (env_elm = environ; *env_elm != 0; env_elm ++ ){
     printf("%s\n", *env_elm);

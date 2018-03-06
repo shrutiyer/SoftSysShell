@@ -21,9 +21,9 @@ void snl_loop(void);
 char* snl_read_line(void);
 void snl_split_line(char* line, char** args);
 int snl_execute(char** args, char** args2, int piped);
-int snl_fork(char **args);
+int snl_fork(char** args);
 char* get_cwd();
-int main(int argc, char **argv, char** envp);
+int main(int argc, char** argv, char** envp);
 int snl_detect_pipe(char* line, char** args, char** args2);
 int snl_forkpipe(char** args, char** args2);
 
@@ -37,9 +37,9 @@ extern char** environ;
   main loop https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
 void snl_loop(void) {
-  char *line;
-  char *args[MAXARGS];
-  char *args2[MAXARGS];
+  char* line;
+  char* args[MAXARGS];
+  char* args2[MAXARGS];
   int status;
   int piped;
 
@@ -61,8 +61,8 @@ void snl_loop(void) {
 */
 char* get_cwd() {
   long size = pathconf(".", _PC_PATH_MAX);
-  char *buf, *ptr;
-  buf = (char *)malloc((size_t)size);
+  char* buf, *ptr;
+  buf = (char* )malloc((size_t)size);
 
   if (buf != NULL){
     ptr = getcwd(buf, (size_t)size);
@@ -137,7 +137,7 @@ void snl_split_line(char* line, char** args){
   adapted from: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
 int snl_detect_pipe(char* line, char** args, char** args2){
-  char *linepiped[2];
+  char* linepiped[2];
   for (int i = 0; i < 2; i++) {
     linepiped[i] = strsep(&line, "|");
     if (linepiped[i] == NULL){
@@ -189,7 +189,7 @@ int snl_execute(char** args, char** args2, int piped) {
 
   Using Brennan's implementation and https://github.com/jmreyes/simple-c-shell
 */
-int snl_fork(char **args){
+int snl_fork(char** args){
   pid_t pid = fork();
   int status;
 
@@ -278,7 +278,7 @@ int snl_forkpipe(char** args, char** args2){
   Using Brennan's implementation of main
  	https://brennan.io/2015/01/16/write-a-shell-in-c/
 */
-int main(int argc, char **argv, char** envp){
+int main(int argc, char** argv, char** envp){
   // Load config files, if any.
 
   // Run command loop.
