@@ -4,7 +4,7 @@
 // An array of strings with built-in command names
 char* snl_builtins_names[] = {"exit", "setenv", "unsetenv", "getenv"};
 
-int (*snl_builtin_func[]) (char **, char**) = {
+int (*snl_builtin_func[]) (char**, char**) = {
   &snl_exit,
   &snl_setenv,
   &snl_unsetenv,
