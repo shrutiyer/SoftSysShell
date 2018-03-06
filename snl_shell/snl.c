@@ -40,11 +40,12 @@ void snl_loop(void) {
   char *args[MAXARGS];
   int status;
   int piped;
+  int split;
 
   do {
     printf("%s> ", get_cwd());
     line = snl_read_line();
-    snl_split_line(line, args); //TODO: idk about C practices but this kinda bothers me that it's not args = snl_split_line(line) - should they all be more uniform?
+    split = snl_split_line(line, args);
     status = snl_execute(args);
 
     free(line);
@@ -96,7 +97,7 @@ char* snl_read_line(void){
 
   based off of: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
-void snl_split_line(char* line, char** args){
+int snl_split_line(char* line, char** args){
   for (int i = 0; i < MAXARGS; i++) {
     // Get each arg seperated by space
     args[i] = strsep(&line, " ");
@@ -107,6 +108,7 @@ void snl_split_line(char* line, char** args){
       i--; // re-write over empty entry
     }
   }
+  return 1;
 }
 
 /*
