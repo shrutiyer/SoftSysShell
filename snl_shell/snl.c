@@ -108,15 +108,15 @@ void snl_split_line(char* line, char** args){
     } else if (strlen(args[i]) == 0) {
       i--; // re-write over empty entry
     } else {
-      if (args[i][0] == 36){ // 36 is $
+      if (strcmp(&args[i][0], "$")){ // 36 is $
         char** env_elm;
         for (env_elm = environ; *env_elm != 0; env_elm ++ ){
-            char* keyval[2]; 
+            char* keyval[2];
             char* elm_dup = strdup(*env_elm); // dup elm so we don't edit actual env
             for (int i = 0; i < 2; i++) {
               keyval[i] = strsep(&elm_dup, "=");
               if (keyval[i] == NULL){
-                  break; 
+                  break;
               }
             }
             if (strcmp(args[i] + 1, keyval[0]) == 0) {
@@ -137,11 +137,11 @@ void snl_split_line(char* line, char** args){
   adapted from: https://www.geeksforgeeks.org/making-linux-shell-c/
 */
 int snl_detect_pipe(char* line, char** args, char** args2){
-  char *linepiped[2]; 
+  char *linepiped[2];
   for (int i = 0; i < 2; i++) {
     linepiped[i] = strsep(&line, "|");
     if (linepiped[i] == NULL){
-      break; 
+      break;
     }
   }
   // if there is a second arg here there is a pipe
@@ -223,8 +223,8 @@ int snl_forkpipe(char** args, char** args2){
   pid_t pid1, pid2;
   // used to keep track of each end of the file descriptor
   //see https://www.geeksforgeeks.org/pipe-system-call/
-  int pipefd[2]; 
-  if (pipe(pipefd) < 0){ 
+  int pipefd[2];
+  if (pipe(pipefd) < 0){
     printf("%s\n", "pipe isn't working");
     exit(EXIT_FAILURE);
   }
@@ -282,7 +282,7 @@ int main(int argc, char **argv, char** envp){
   // Load config files, if any.
 
   // Run command loop.
-  environ = envp; 
+  environ = envp;
 
   snl_loop();
 
