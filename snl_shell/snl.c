@@ -8,6 +8,8 @@ This program is an implementation of a shell with a few basic UNIX commands
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <stdlib.h>
 #include "builtins.c"
@@ -27,7 +29,7 @@ int main(int argc, char** argv, char** envp);
 int snl_detect_pipe(char** args);
 int snl_forkpipe(char** args);
 int snl_detect_redirect(char** args);
-int snl_fork_redirect(char** args);
+int snl_fork_redirect(char** args, int redirect_index);
 
 extern char** environ;
 /*
@@ -155,7 +157,7 @@ int snl_detect_redirect(char** args) {
       return 0; // reached end, no pipe
     }
     if (strcmp(args[i],">") == 0){
-      return 1; // yes pipe
+      return i; // yes pipe
     }
   }
   return 0; // no pipe
@@ -182,10 +184,10 @@ int snl_execute(char** args) {
   if (snl_detect_pipe(args) == 1){
     return snl_forkpipe(args);
   }
-  if (snl_detect_redirect(args) == 1) {
+  if (snl_detect_redirect(args) != 0) {
     // REDIRECT
     printf("REDIRECT\n");
-    return snl_fork_redirect(args);
+    return snl_fork_redirect(args, snl_detect_redirect(args));
   }
   /* TODO: If there's file I/O redirection present, do that
     return snl_fork_io(args);
@@ -358,9 +360,41 @@ int snl_forkpipe(char* args[]){
   return 1;
 }
 
-int snl_fork_redirect(char** args) {
+void get_command(char* args[], char* command[], int redirect_index) {
+  for (int i=0; i<redirect_index; i++) {
+    command[i] = args[i];
+    printf("ARGS IN COMMAND %s\n", command[i]);
+  }
+  command[redirect_index] = '\0';
+}
 
-  return 1;
+int snl_fork_redirect(char* args[], int redirect_index) {
+  int file_descriptor;
+  char* filename = args[redirect_index+1];
+  char* command[100];
+
+  get_command(args, command, redirect_index);
+
+  pid_t pid = fork();
+  if (pid == -1) {
+    printf("Fork could not create a child process\n");
+  } else if (pid == 0) {
+
+    // Open a  file to write to it
+    file_descriptor = open(filename, O_CREAT | O_TRUNC | O_WRONLY, 0600);
+    if (file_descriptor < 0) {
+      perror("Incorrect file given for redirect");
+    }
+		// Replace standard output with appropriate file
+		dup2(file_descriptor, 1);
+    close(file_descriptor);
+
+    if (execvp(command[0], command) == -1){
+      perror("snl fork redirect");
+  		kill(getpid(),SIGTERM);
+    }
+  }
+  waitpid(pid, NULL, 0);
 }
 
 /*
