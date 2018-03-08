@@ -1,4 +1,4 @@
-## UNIX Shell
+## SNL Shell
 #### By Shruti Iyer, Nora Mohamed, and Lucy Wilcox
 
 The goal of our project to build a simple replica of a UNIX shell that can execute core commands frequently used in a shell. Our minimum viable product will be to build a shell that initializes, interprets commands and terminates. The shell will contain 3-5 commands for any user to execute.
