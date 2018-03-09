@@ -1,10 +1,14 @@
-// Environment management built in functions
+/*
+  Environment management built in functions
+
+  Authors: LucyWilcox, nmohamed, shrutiyer
+*/
 
 /*
   Sets new environment variable
   Inputs: char** of args (first is the key second is the value) and char** the current env
   Returns: 1
-  
+
 */
 int snl_setenv(char** args, char** environ) {
   // no value, only key
@@ -24,7 +28,7 @@ int snl_setenv(char** args, char** environ) {
   Removes environment variable
   Inputs: char** of args (args[1] is the key to be removed from the env) and char** the current env
   Returns: 1
-  
+
 */
 int snl_unsetenv(char** args, char** environ) {
   if (args[1] == NULL) {
