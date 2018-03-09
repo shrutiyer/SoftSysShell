@@ -1,3 +1,9 @@
+/*
+  All builtin functions written for SNL Shell
+
+  Authors: LucyWilcox, nmohamed, shrutiyer
+*/
+
 #include "exit.c"
 #include "manage_env.c"
 
