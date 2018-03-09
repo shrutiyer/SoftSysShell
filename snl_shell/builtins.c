@@ -30,7 +30,9 @@ int snl_builtins_number() {
 }
 
 /*
-
+  Provides help information for builtin functions
+  Inputs: char** of args (the function help is being called about - optional) and char** the current env
+  Returns: 1
 */
 int snl_help(char **args, char** environ) {
   if (args[1] == NULL) {
