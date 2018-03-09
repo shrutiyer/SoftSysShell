@@ -169,6 +169,14 @@ int snl_forkpipe(char* args[]){
   return 1;
 }
 
+/*
+  Extracts the first part of the redirect command and the index of the ">" symbol
+
+  Inputs: The user-inputted line of command stored in an array of arrays
+          char *foo[] placeholder to store the first-half of the command
+          int laceholder to store the index of the ">" symbol
+*/
+
 void get_command(char* args[], char* command[], int redirect_index) {
   for (int i=0; i<redirect_index; i++) {
     command[i] = args[i];
@@ -176,6 +184,14 @@ void get_command(char* args[], char* command[], int redirect_index) {
   command[redirect_index] = '\0';
 }
 
+/*
+  For a redirect command, launches a child process and stores the output in the
+  user-given file name
+
+  Inputs: The user-inputted line of command stored in an array of arrays
+          Index of the redirect command ">" in the args array
+  Returns: 1
+*/
 int snl_fork_redirect(char* args[], int redirect_index) {
   int file_descriptor;
   char* filename = args[redirect_index+1];
