@@ -47,7 +47,8 @@ int snl_help(char **args, char** environ) {
     }
     puts("For more help with these functions, call help followed by the built-in function of your choice\n");
   } else if (!strcmp(args[1], "exit")){
-    puts("\nExit ends the current program");
+    // many puts are used because I think it's a bit more readable than one big line
+    puts("\nExit leaves the shell"); 
     puts("A call to exit is structured:");
     puts("  exit");
     puts("It takes no args\n");
@@ -74,7 +75,12 @@ int snl_help(char **args, char** environ) {
     puts("  getenv");
     puts("It takes no args\n");
   } else if (!strcmp(args[1], "cd")){
-
+    puts("\nCd allows you to navigate to different directories");
+    puts("A call to cd is structured:");
+    puts("  cd .. \n or \n   cd sub-directory");
+    puts("For example:");
+    puts("  cd best-folder-ever");
+    puts("Would change the directory to best-folder-ever\n");
   } else if (!strcmp(args[1], "help")){
     puts("\nHelp gives you information about built-in functions");
     puts("A call to help is structured either:");
