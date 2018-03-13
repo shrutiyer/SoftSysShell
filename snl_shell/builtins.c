@@ -6,17 +6,21 @@
 
 #include "exit.c"
 #include "manage_env.c"
+#include "cd.c"
 
 int snl_help(char **args, char** environ);
 
 // An array of strings with built-in command names
-char* snl_builtins_names[] = {"exit", "setenv", "unsetenv", "getenv", "help"};
+
+char* snl_builtins_names[] = {"exit", "setenv", "unsetenv", "getenv", "cd", "help"};
+
 
 int (*snl_builtin_func[]) (char**, char**) = {
   &snl_exit,
   &snl_setenv,
   &snl_unsetenv,
   &snl_getenv,
+  &snl_cd,
   &snl_help
 };
 
@@ -69,6 +73,8 @@ int snl_help(char **args, char** environ) {
     puts("A call to getenv is structured");
     puts("  getenv");
     puts("It takes no args\n");
+  } else if (!strcmp(args[1], "cd")){
+
   } else if (!strcmp(args[1], "help")){
     puts("\nHelp gives you information about built-in functions");
     puts("A call to help is structured either:");
